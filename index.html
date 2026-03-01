@@ -1,0 +1,1188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>QuantumShield — PQC Security Scanner</title>
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:        #040d18;
+      --bg2:       #071525;
+      --bg3:       #0a1f35;
+      --panel:     #0d2540;
+      --border:    #1a3a5c;
+      --accent:    #00d4ff;
+      --accent2:   #0099cc;
+      --green:     #00e676;
+      --orange:    #ff9100;
+      --red:       #ff1744;
+      --text:      #e8f4fd;
+      --muted:     #6b9ab8;
+      --font-head: 'Syne', sans-serif;
+      --font-mono: 'Space Mono', monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-mono);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── Grid Background ── */
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image:
+        linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    #root { position: relative; z-index: 1; }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg2); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    /* ── Layout ── */
+    .shell { display: flex; min-height: 100vh; }
+    .sidebar {
+      width: 240px; flex-shrink: 0;
+      background: var(--bg2);
+      border-right: 1px solid var(--border);
+      padding: 24px 0;
+      position: sticky; top: 0; height: 100vh;
+      overflow-y: auto;
+    }
+    .main { flex: 1; padding: 32px; overflow: auto; }
+
+    /* ── Sidebar ── */
+    .logo {
+      padding: 0 24px 24px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 20px;
+    }
+    .logo-mark {
+      font-family: var(--font-head);
+      font-size: 20px; font-weight: 800;
+      color: var(--accent);
+      letter-spacing: -0.5px;
+    }
+    .logo-sub { font-size: 9px; color: var(--muted); letter-spacing: 2px; margin-top: 2px; }
+
+    .nav-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 24px;
+      cursor: pointer;
+      font-size: 12px;
+      color: var(--muted);
+      transition: all 0.15s;
+      border-left: 2px solid transparent;
+    }
+    .nav-item:hover { color: var(--text); background: rgba(0,212,255,0.05); }
+    .nav-item.active { color: var(--accent); border-left-color: var(--accent); background: rgba(0,212,255,0.08); }
+    .nav-icon { font-size: 14px; width: 18px; text-align: center; }
+
+    /* ── Page Header ── */
+    .page-header {
+      margin-bottom: 28px;
+      display: flex; align-items: flex-end; justify-content: space-between;
+    }
+    .page-title {
+      font-family: var(--font-head);
+      font-size: 28px; font-weight: 800;
+      background: linear-gradient(135deg, var(--text) 0%, var(--accent) 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .page-sub { font-size: 11px; color: var(--muted); margin-top: 4px; letter-spacing: 1px; }
+
+    /* ── Panels ── */
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+    }
+    .panel-title {
+      font-family: var(--font-head);
+      font-size: 13px; font-weight: 700;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      margin-bottom: 16px;
+      display: flex; align-items: center; gap: 8px;
+    }
+
+    /* ── Stat Cards ── */
+    .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px; }
+    .stat-card {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 20px;
+      position: relative; overflow: hidden;
+    }
+    .stat-card::before {
+      content: ''; position: absolute;
+      top: 0; left: 0; right: 0; height: 2px;
+    }
+    .stat-card.blue::before  { background: linear-gradient(90deg, var(--accent), transparent); }
+    .stat-card.green::before { background: linear-gradient(90deg, var(--green), transparent); }
+    .stat-card.orange::before { background: linear-gradient(90deg, var(--orange), transparent); }
+    .stat-card.red::before   { background: linear-gradient(90deg, var(--red), transparent); }
+
+    .stat-value { font-family: var(--font-head); font-size: 36px; font-weight: 800; line-height: 1; }
+    .stat-card.blue .stat-value  { color: var(--accent); }
+    .stat-card.green .stat-value { color: var(--green); }
+    .stat-card.orange .stat-value { color: var(--orange); }
+    .stat-card.red .stat-value   { color: var(--red); }
+    .stat-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 1.5px; margin-top: 6px; }
+    .stat-sub   { font-size: 11px; color: var(--muted); margin-top: 8px; }
+
+    /* ── Scan Form ── */
+    .scan-form {
+      display: flex; gap: 12px; align-items: flex-end;
+      margin-bottom: 28px;
+    }
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .form-group label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 1.5px; }
+    .input-field {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 14px;
+      color: var(--text);
+      font-family: var(--font-mono);
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .input-field:focus { border-color: var(--accent); }
+    .input-field::placeholder { color: var(--muted); }
+    .input-host { width: 320px; }
+    .input-port { width: 100px; }
+
+    .btn {
+      padding: 10px 22px;
+      border-radius: 8px;
+      border: none; cursor: pointer;
+      font-family: var(--font-mono);
+      font-size: 13px; font-weight: 700;
+      transition: all 0.15s;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .btn-primary {
+      background: var(--accent);
+      color: var(--bg);
+    }
+    .btn-primary:hover { background: #00f0ff; transform: translateY(-1px); }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+    .btn-ghost {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted);
+    }
+    .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* ── Quick Targets ── */
+    .quick-targets { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 24px; }
+    .quick-chip {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 4px 12px;
+      font-size: 11px; color: var(--muted);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .quick-chip:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* ── Results Table ── */
+    .results-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .results-table th {
+      text-align: left;
+      padding: 10px 14px;
+      color: var(--muted);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      border-bottom: 1px solid var(--border);
+    }
+    .results-table td {
+      padding: 12px 14px;
+      border-bottom: 1px solid rgba(26,58,92,0.5);
+      vertical-align: middle;
+    }
+    .results-table tr:hover td { background: rgba(0,212,255,0.03); }
+
+    /* ── Badges ── */
+    .badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 3px 10px; border-radius: 20px;
+      font-size: 10px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 1px;
+    }
+    .badge-green  { background: rgba(0,230,118,0.12); color: var(--green); border: 1px solid rgba(0,230,118,0.3); }
+    .badge-orange { background: rgba(255,145,0,0.12); color: var(--orange); border: 1px solid rgba(255,145,0,0.3); }
+    .badge-red    { background: rgba(255,23,68,0.12); color: var(--red); border: 1px solid rgba(255,23,68,0.3); }
+    .badge-blue   { background: rgba(0,212,255,0.12); color: var(--accent); border: 1px solid rgba(0,212,255,0.3); }
+
+    /* ── Risk Bar ── */
+    .risk-bar-wrap { display: flex; align-items: center; gap: 8px; }
+    .risk-bar { height: 4px; background: var(--bg2); border-radius: 2px; flex: 1; overflow: hidden; }
+    .risk-fill { height: 100%; border-radius: 2px; transition: width 0.5s ease; }
+
+    /* ── Scan Detail Modal ── */
+    .overlay {
+      position: fixed; inset: 0;
+      background: rgba(4,13,24,0.85);
+      backdrop-filter: blur(8px);
+      z-index: 100;
+      display: flex; align-items: center; justify-content: center;
+      padding: 20px;
+    }
+    .modal {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      width: 100%; max-width: 900px;
+      max-height: 90vh; overflow-y: auto;
+      padding: 32px;
+    }
+    .modal-header {
+      display: flex; justify-content: space-between; align-items: flex-start;
+      margin-bottom: 28px;
+    }
+    .close-btn {
+      background: transparent; border: 1px solid var(--border);
+      border-radius: 6px; padding: 6px 10px;
+      color: var(--muted); cursor: pointer; font-size: 16px;
+      transition: all 0.15s;
+    }
+    .close-btn:hover { border-color: var(--red); color: var(--red); }
+
+    /* ── TLS Details Grid ── */
+    .detail-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px;
+      margin-bottom: 24px;
+    }
+    .detail-item {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px;
+    }
+    .detail-key { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+    .detail-val { font-size: 13px; color: var(--text); word-break: break-all; }
+
+    /* ── Findings List ── */
+    .finding {
+      padding: 10px 14px;
+      border-radius: 6px;
+      font-size: 12px;
+      margin-bottom: 8px;
+      border-left: 3px solid transparent;
+    }
+    .finding-critical { background: rgba(255,23,68,0.08); border-left-color: var(--red); color: #ff8a9a; }
+    .finding-warning  { background: rgba(255,145,0,0.08); border-left-color: var(--orange); color: #ffc066; }
+    .finding-pass     { background: rgba(0,230,118,0.08); border-left-color: var(--green); color: #80f0b0; }
+    .finding-info     { background: rgba(0,212,255,0.05); border-left-color: var(--accent); color: #80d8ff; }
+
+    /* ── CBOM JSON viewer ── */
+    .json-viewer {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+      font-size: 11px;
+      max-height: 320px; overflow-y: auto;
+      white-space: pre-wrap; word-break: break-all;
+      color: #80cfff;
+      line-height: 1.6;
+    }
+
+    /* ── Progress Ring ── */
+    .progress-ring-wrap { display: flex; align-items: center; gap: 24px; }
+    .ring-label { font-family: var(--font-head); font-size: 13px; font-weight: 700; }
+
+    /* ── Dist bars ── */
+    .dist-bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; font-size: 12px; }
+    .dist-label { width: 130px; color: var(--muted); font-size: 10px; }
+    .dist-bar { flex: 1; height: 6px; background: var(--bg2); border-radius: 3px; overflow: hidden; }
+    .dist-count { width: 40px; text-align: right; color: var(--text); font-size: 11px; }
+
+    /* ── Loading spinner ── */
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    .spinner {
+      width: 20px; height: 20px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+    .scan-pulse { animation: pulse 1.5s ease-in-out infinite; }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed; bottom: 24px; right: 24px;
+      background: var(--panel); border: 1px solid var(--border);
+      border-radius: 10px; padding: 14px 20px;
+      font-size: 13px; z-index: 200;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+      animation: slideIn 0.3s ease;
+    }
+    @keyframes slideIn { from { transform: translateX(100px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    .toast-success { border-left: 3px solid var(--green); }
+    .toast-error   { border-left: 3px solid var(--red); }
+
+    /* ── Tabs ── */
+    .tabs { display: flex; gap: 4px; margin-bottom: 20px; border-bottom: 1px solid var(--border); }
+    .tab {
+      padding: 10px 18px; cursor: pointer;
+      font-size: 12px; color: var(--muted);
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px; transition: all 0.15s;
+      text-transform: uppercase; letter-spacing: 1px;
+    }
+    .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+    .tab:hover  { color: var(--text); }
+
+    /* ── SVG Badge display ── */
+    .badge-display { background: var(--bg); border-radius: 8px; padding: 16px; text-align: center; }
+
+    /* Responsive */
+    @media (max-width: 1100px) {
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+      .detail-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 768px) {
+      .sidebar { display: none; }
+      .stats-grid { grid-template-columns: 1fr 1fr; }
+      .scan-form { flex-direction: column; }
+      .input-host { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+const { useState, useEffect, useCallback, useRef } = React;
+
+const API = 'http://localhost:8000/api';
+
+// ── Utils ─────────────────────────────────────────────────────────────────────
+const riskColor = r => ({ HIGH: '#ff1744', MEDIUM: '#ff9100', LOW: '#00e676' }[r] || '#6b9ab8');
+const statusColor = s => ({
+  FULLY_QUANTUM_SAFE: '#00e676',
+  TRANSITIONAL: '#ff9100',
+  NOT_PQC_READY: '#ff1744',
+}[s] || '#6b9ab8');
+
+const statusLabel = s => ({
+  FULLY_QUANTUM_SAFE: '✓ PQC Ready',
+  TRANSITIONAL: '⚠ Transitional',
+  NOT_PQC_READY: '✗ Not Ready',
+}[s] || s);
+
+const badgeClass = r => ({ HIGH: 'badge-red', MEDIUM: 'badge-orange', LOW: 'badge-green' }[r] || 'badge-blue');
+const statusBadgeClass = s => ({
+  FULLY_QUANTUM_SAFE: 'badge-green',
+  TRANSITIONAL: 'badge-orange',
+  NOT_PQC_READY: 'badge-red',
+}[s] || 'badge-blue');
+
+function findingClass(f) {
+  if (f.includes('CRITICAL')) return 'finding-critical';
+  if (f.includes('WARNING')) return 'finding-warning';
+  if (f.includes('PASS')) return 'finding-pass';
+  return 'finding-info';
+}
+
+// ── Toast ─────────────────────────────────────────────────────────────────────
+function Toast({ msg, type, onClose }) {
+  useEffect(() => { const t = setTimeout(onClose, 4000); return () => clearTimeout(t); }, []);
+  return (
+    <div className={`toast toast-${type}`}>
+      <span>{type === 'success' ? '✓' : '✗'} {msg}</span>
+    </div>
+  );
+}
+
+// ── Stat Card ─────────────────────────────────────────────────────────────────
+function StatCard({ value, label, sub, color = 'blue' }) {
+  return (
+    <div className={`stat-card ${color}`}>
+      <div className="stat-value">{value}</div>
+      <div className="stat-label">{label}</div>
+      {sub && <div className="stat-sub">{sub}</div>}
+    </div>
+  );
+}
+
+// ── Risk Bar ──────────────────────────────────────────────────────────────────
+function RiskBar({ score }) {
+  const c = score >= 70 ? '#ff1744' : score >= 40 ? '#ff9100' : '#00e676';
+  return (
+    <div className="risk-bar-wrap">
+      <div className="risk-bar" style={{ width: 80 }}>
+        <div className="risk-fill" style={{ width: `${score}%`, background: c }} />
+      </div>
+      <span style={{ fontSize: 11, color: c }}>{score}</span>
+    </div>
+  );
+}
+
+// ── Findings Panel ────────────────────────────────────────────────────────────
+function FindingsPanel({ findings = [], remediation = [] }) {
+  const [tab, setTab] = useState('findings');
+  return (
+    <div>
+      <div className="tabs">
+        <div className={`tab ${tab === 'findings' ? 'active' : ''}`} onClick={() => setTab('findings')}>
+          Findings ({findings.length})
+        </div>
+        <div className={`tab ${tab === 'remediation' ? 'active' : ''}`} onClick={() => setTab('remediation')}>
+          Remediation ({remediation.length})
+        </div>
+      </div>
+      {tab === 'findings' && findings.map((f, i) => (
+        <div key={i} className={`finding ${findingClass(f)}`}>{f}</div>
+      ))}
+      {tab === 'remediation' && remediation.map((r, i) => (
+        <div key={i} className="finding finding-info">
+          <span style={{ color: '#00d4ff', marginRight: 6 }}>{i + 1}.</span>{r}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── Scan Detail Modal ─────────────────────────────────────────────────────────
+function ScanDetailModal({ scan, onClose }) {
+  const [tab, setTab] = useState('overview');
+
+  const badgeSvg = scan.badge_svg || (scan.cbom?.quantum_label?.color_code ? null : null);
+  const cbom = scan.cbom;
+  const cert = scan.certificate;
+
+  return (
+    <div className="overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="modal">
+        {/* Header */}
+        <div className="modal-header">
+          <div>
+            <div style={{ fontFamily: "'Syne',sans-serif", fontSize: 22, fontWeight: 800, color: '#e8f4fd' }}>
+              {scan.target}:{scan.port}
+            </div>
+            <div style={{ fontSize: 11, color: '#6b9ab8', marginTop: 4 }}>
+              Scanned {new Date(scan.scanned_at).toLocaleString()}
+            </div>
+            <div style={{ marginTop: 10, display: 'flex', gap: 8 }}>
+              <span className={`badge ${statusBadgeClass(scan.quantum_status)}`}>
+                {statusLabel(scan.quantum_status)}
+              </span>
+              <span className={`badge ${badgeClass(scan.risk_level)}`}>
+                {scan.risk_level} Risk
+              </span>
+              {scan.is_compliant && (
+                <span className="badge badge-green">🏅 Badge Issued</span>
+              )}
+            </div>
+          </div>
+          <button className="close-btn" onClick={onClose}>✕</button>
+        </div>
+
+        {/* Tabs */}
+        <div className="tabs">
+          {['overview', 'findings', 'cbom', 'certificate'].map(t => (
+            <div key={t} className={`tab ${tab === t ? 'active' : ''}`} onClick={() => setTab(t)}>
+              {t.charAt(0).toUpperCase() + t.slice(1)}
+            </div>
+          ))}
+        </div>
+
+        {tab === 'overview' && (
+          <div>
+            <div className="detail-grid">
+              {[
+                ['TLS Version', scan.tls_version],
+                ['Cipher Suite', scan.cipher_suite],
+                ['Key Exchange', scan.key_exchange],
+                ['Signature Alg', scan.signature_alg],
+                ['Cert Type', scan.cert_type],
+                ['Key Size', scan.key_size ? `${scan.key_size} bits` : 'Unknown'],
+                ['Cert Expiry', scan.cert_expiry],
+                ['Days Until Expiry', scan.days_until_expiry ?? 'Unknown'],
+                ['Cert Valid', scan.cert_valid ? '✓ Valid' : '✗ Invalid/Unknown'],
+                ['Risk Score', `${scan.risk_score ?? 0}/100`],
+                ['Cert Issuer', scan.cert_issuer],
+                ['Cert Subject', scan.cert_subject],
+              ].map(([k, v]) => (
+                <div key={k} className="detail-item">
+                  <div className="detail-key">{k}</div>
+                  <div className="detail-val">{v || '—'}</div>
+                </div>
+              ))}
+            </div>
+            {scan.scan_error && (
+              <div className="finding finding-warning" style={{ marginTop: 8 }}>
+                ⚠ Scan note: {scan.scan_error}
+              </div>
+            )}
+            {badgeSvg && (
+              <div>
+                <div className="panel-title" style={{ marginTop: 20 }}>Digital Badge</div>
+                <div className="badge-display" dangerouslySetInnerHTML={{ __html: badgeSvg }} />
+              </div>
+            )}
+          </div>
+        )}
+
+        {tab === 'findings' && (
+          <FindingsPanel findings={scan.findings || []} remediation={scan.remediation || []} />
+        )}
+
+        {tab === 'cbom' && cbom && (
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <div className="panel-title">Cryptographic Bill of Materials</div>
+              <button className="btn btn-ghost" style={{ padding: '6px 14px', fontSize: 11 }}
+                onClick={() => {
+                  const a = document.createElement('a');
+                  a.href = `${API}/cbom/${scan.scan_id || scan.id}/export`;
+                  a.download = `cbom-${scan.target}.json`;
+                  a.click();
+                }}>
+                ↓ Export JSON
+              </button>
+            </div>
+            <div className="json-viewer">{JSON.stringify(cbom, null, 2)}</div>
+          </div>
+        )}
+
+        {tab === 'certificate' && cert && (
+          <div>
+            <div className="panel-title">PQC Compliance Certificate</div>
+            <div className="json-viewer">{JSON.stringify(cert, null, 2)}</div>
+            <div style={{ marginTop: 16, fontSize: 11, color: '#6b9ab8' }}>
+              Fingerprint: {cert.fingerprint}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Dashboard Stats ───────────────────────────────────────────────────────────
+function DashboardPage({ onNav }) {
+  const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch(`${API}/dashboard/stats`)
+      .then(r => r.json())
+      .then(d => { setStats(d); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, []);
+
+  if (loading) return (
+    <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 80 }}>
+      <div className="spinner" style={{ width: 40, height: 40 }} />
+    </div>
+  );
+
+  if (!stats || stats.total_scans === 0) return (
+    <div style={{ textAlign: 'center', paddingTop: 80, color: '#6b9ab8' }}>
+      <div style={{ fontSize: 48, marginBottom: 16 }}>🔍</div>
+      <div style={{ fontFamily: "'Syne',sans-serif", fontSize: 20, fontWeight: 700 }}>No scans yet</div>
+      <div style={{ marginTop: 8, fontSize: 13 }}>Run your first scan to see the dashboard.</div>
+      <button className="btn btn-primary" style={{ marginTop: 20 }} onClick={() => onNav('scan')}>
+        Start Scanning
+      </button>
+    </div>
+  );
+
+  const distMax = Math.max(...Object.values(stats.quantum_distribution), 1);
+
+  return (
+    <div>
+      {/* Stats row */}
+      <div className="stats-grid">
+        <StatCard value={stats.total_scans} label="Total Scans" sub={`Last 50 targets`} color="blue" />
+        <StatCard value={`${stats.pqc_readiness_pct}%`} label="PQC Ready" sub={`${stats.quantum_distribution.FULLY_QUANTUM_SAFE} compliant`} color="green" />
+        <StatCard value={stats.risk_distribution.HIGH} label="High Risk" sub="Needs immediate action" color="red" />
+        <StatCard value={`${stats.avg_risk_score}`} label="Avg Risk Score" sub="0=safe, 100=critical" color="orange" />
+      </div>
+
+      {/* Two-col layout */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+
+        {/* Quantum Status Distribution */}
+        <div className="panel">
+          <div className="panel-title">⚛ Quantum Readiness</div>
+          {[
+            ['FULLY_QUANTUM_SAFE', 'PQC Ready', '#00e676'],
+            ['TRANSITIONAL', 'Transitional', '#ff9100'],
+            ['NOT_PQC_READY', 'Not Ready', '#ff1744'],
+          ].map(([key, label, color]) => (
+            <div key={key} className="dist-bar-row">
+              <div className="dist-label">{label}</div>
+              <div className="dist-bar">
+                <div style={{
+                  height: '100%', borderRadius: 3,
+                  width: `${(stats.quantum_distribution[key] / distMax) * 100}%`,
+                  background: color, transition: 'width 0.8s ease'
+                }} />
+              </div>
+              <div className="dist-count">{stats.quantum_distribution[key]}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Risk Distribution */}
+        <div className="panel">
+          <div className="panel-title">⚠ Risk Distribution</div>
+          {[
+            ['HIGH', '#ff1744'], ['MEDIUM', '#ff9100'], ['LOW', '#00e676']
+          ].map(([key, color]) => {
+            const rMax = Math.max(...Object.values(stats.risk_distribution), 1);
+            return (
+              <div key={key} className="dist-bar-row">
+                <div className="dist-label">{key} Risk</div>
+                <div className="dist-bar">
+                  <div style={{
+                    height: '100%', borderRadius: 3,
+                    width: `${(stats.risk_distribution[key] / rMax) * 100}%`,
+                    background: color, transition: 'width 0.8s ease'
+                  }} />
+                </div>
+                <div className="dist-count">{stats.risk_distribution[key]}</div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* TLS Distribution */}
+        <div className="panel">
+          <div className="panel-title">🔒 TLS Versions</div>
+          {Object.entries(stats.tls_distribution).map(([ver, count]) => {
+            const tMax = Math.max(...Object.values(stats.tls_distribution), 1);
+            const c = (ver.includes('1.3') || ver.includes('TLSv1.3')) ? '#00e676'
+                    : (ver.includes('1.2')) ? '#ff9100' : '#ff1744';
+            return (
+              <div key={ver} className="dist-bar-row">
+                <div className="dist-label">{ver || 'Unknown'}</div>
+                <div className="dist-bar">
+                  <div style={{ height: '100%', borderRadius: 3, width: `${(count / tMax) * 100}%`, background: c }} />
+                </div>
+                <div className="dist-count">{count}</div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* High Risk Targets */}
+        <div className="panel">
+          <div className="panel-title">🔥 High Risk Targets</div>
+          {stats.recent_high_risk.length === 0 ? (
+            <div style={{ color: '#00e676', fontSize: 13 }}>✓ No high-risk targets detected</div>
+          ) : stats.recent_high_risk.map(s => (
+            <div key={s.id} style={{
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              padding: '8px 0', borderBottom: '1px solid rgba(26,58,92,0.5)',
+              fontSize: 12
+            }}>
+              <span style={{ color: '#e8f4fd' }}>{s.target}</span>
+              <span className="badge badge-red">Score: {s.risk_score}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Scanner Page ──────────────────────────────────────────────────────────────
+const QUICK_TARGETS = [
+  'google.com', 'cloudflare.com', 'github.com', 'microsoft.com',
+  'amazon.com', 'apple.com', 'mozilla.org',
+];
+
+function ScannerPage() {
+  const [target, setTarget] = useState('');
+  const [port, setPort] = useState('443');
+  const [scanning, setScanning] = useState(false);
+  const [result, setResult] = useState(null);
+  const [error, setError] = useState('');
+  const [selected, setSelected] = useState(null);
+
+  async function handleScan() {
+    if (!target.trim()) return;
+    setScanning(true); setResult(null); setError('');
+    try {
+      const r = await fetch(`${API}/scan/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ target: target.trim(), port: parseInt(port) || 443 }),
+      });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.detail || 'Scan failed');
+      setResult(d);
+      setSelected(d);
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setScanning(false);
+    }
+  }
+
+  return (
+    <div>
+      {/* Scan form */}
+      <div className="panel" style={{ marginBottom: 24 }}>
+        <div className="panel-title">⚡ New TLS Scan</div>
+        <div className="scan-form">
+          <div className="form-group">
+            <label>Target Host</label>
+            <input className="input-field input-host" placeholder="e.g. your-bank.com"
+              value={target} onChange={e => setTarget(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && !scanning && handleScan()} />
+          </div>
+          <div className="form-group">
+            <label>Port</label>
+            <input className="input-field input-port" value={port}
+              onChange={e => setPort(e.target.value)} />
+          </div>
+          <button className="btn btn-primary" onClick={handleScan} disabled={scanning || !target.trim()}>
+            {scanning ? (
+              <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div className="spinner" />
+                Scanning...
+              </span>
+            ) : '→ Scan'}
+          </button>
+        </div>
+
+        <div style={{ fontSize: 11, color: '#6b9ab8', marginBottom: 8 }}>Quick targets:</div>
+        <div className="quick-targets">
+          {QUICK_TARGETS.map(t => (
+            <div key={t} className="quick-chip" onClick={() => { setTarget(t); }}>
+              {t}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {error && (
+        <div className="finding finding-critical" style={{ marginBottom: 20 }}>
+          ✗ {error}
+        </div>
+      )}
+
+      {/* Scan result */}
+      {result && (
+        <div className="panel">
+          <div className="panel-title">📊 Scan Result — {result.target}</div>
+
+          {/* Status bar */}
+          <div style={{
+            display: 'flex', gap: 12, alignItems: 'center',
+            padding: '14px 18px',
+            background: 'rgba(0,0,0,0.3)', borderRadius: 8, marginBottom: 20,
+            border: `1px solid ${statusColor(result.quantum_status)}30`
+          }}>
+            <div style={{
+              width: 48, height: 48, borderRadius: '50%', flexShrink: 0,
+              background: `${statusColor(result.quantum_status)}20`,
+              border: `2px solid ${statusColor(result.quantum_status)}`,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22
+            }}>
+              {result.quantum_status === 'FULLY_QUANTUM_SAFE' ? '✓' :
+               result.quantum_status === 'TRANSITIONAL' ? '⚠' : '✗'}
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontFamily: "'Syne',sans-serif", fontSize: 18, fontWeight: 800,
+                color: statusColor(result.quantum_status) }}>
+                {statusLabel(result.quantum_status)}
+              </div>
+              <div style={{ fontSize: 11, color: '#6b9ab8', marginTop: 2 }}>
+                Risk Score: {result.risk_score}/100 • {result.cert_type} • {result.tls_version}
+              </div>
+            </div>
+            <span className={`badge ${badgeClass(result.risk_level)}`} style={{ fontSize: 12 }}>
+              {result.risk_level} RISK
+            </span>
+          </div>
+
+          {/* Key details */}
+          <div className="detail-grid">
+            {[
+              ['TLS Version', result.tls_version],
+              ['Cipher Suite', result.cipher_suite],
+              ['Key Exchange', result.key_exchange],
+              ['Signature Alg', result.signature_alg],
+              ['Cert Type', result.cert_type],
+              ['Key Size', result.key_size ? `${result.key_size} bits` : '—'],
+            ].map(([k, v]) => (
+              <div key={k} className="detail-item">
+                <div className="detail-key">{k}</div>
+                <div className="detail-val">{v || '—'}</div>
+              </div>
+            ))}
+          </div>
+
+          <FindingsPanel findings={result.findings || []} remediation={result.remediation || []} />
+
+          {result.badge_svg && (
+            <div style={{ marginTop: 20 }}>
+              <div className="panel-title">Digital Badge</div>
+              <div className="badge-display" dangerouslySetInnerHTML={{ __html: result.badge_svg }} />
+            </div>
+          )}
+        </div>
+      )}
+
+      {selected && selected !== result && (
+        <ScanDetailModal scan={selected} onClose={() => setSelected(null)} />
+      )}
+    </div>
+  );
+}
+
+// ── Scans List Page ───────────────────────────────────────────────────────────
+function ScansPage() {
+  const [scans, setScans] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [selected, setSelected] = useState(null);
+  const [fullScan, setFullScan] = useState(null);
+
+  useEffect(() => {
+    fetch(`${API}/scan/`)
+      .then(r => r.json())
+      .then(d => { setScans(d.items || []); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, []);
+
+  async function viewScan(id) {
+    const r = await fetch(`${API}/scan/${id}`);
+    const d = await r.json();
+    setFullScan(d);
+  }
+
+  async function deleteScan(id, e) {
+    e.stopPropagation();
+    await fetch(`${API}/scan/${id}`, { method: 'DELETE' });
+    setScans(prev => prev.filter(s => s.id !== id));
+  }
+
+  if (loading) return <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 80 }}><div className="spinner" style={{ width: 40, height: 40 }} /></div>;
+
+  return (
+    <div>
+      <div className="panel">
+        <div className="panel-title">📋 Scan History ({scans.length} results)</div>
+        {scans.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '40px 0', color: '#6b9ab8' }}>
+            No scans yet. Run your first scan.
+          </div>
+        ) : (
+          <table className="results-table">
+            <thead>
+              <tr>
+                <th>Target</th>
+                <th>TLS</th>
+                <th>Cert Type</th>
+                <th>Key Exchange</th>
+                <th>Quantum Status</th>
+                <th>Risk</th>
+                <th>Score</th>
+                <th>Scanned</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {scans.map(s => (
+                <tr key={s.id} style={{ cursor: 'pointer' }} onClick={() => viewScan(s.id)}>
+                  <td style={{ color: '#00d4ff', fontWeight: 700 }}>{s.target}:{s.port}</td>
+                  <td>{s.tls_version || '—'}</td>
+                  <td>{s.cert_type || '—'}</td>
+                  <td style={{ fontSize: 11 }}>{s.key_exchange || '—'}</td>
+                  <td>
+                    <span className={`badge ${statusBadgeClass(s.quantum_status)}`} style={{ fontSize: 10 }}>
+                      {statusLabel(s.quantum_status)}
+                    </span>
+                  </td>
+                  <td><span className={`badge ${badgeClass(s.risk_level)}`}>{s.risk_level}</span></td>
+                  <td><RiskBar score={s.risk_score || 0} /></td>
+                  <td style={{ color: '#6b9ab8', fontSize: 11 }}>
+                    {s.scanned_at ? new Date(s.scanned_at).toLocaleDateString() : '—'}
+                  </td>
+                  <td>
+                    <button className="btn btn-ghost" style={{ padding: '4px 8px', fontSize: 10 }}
+                      onClick={e => deleteScan(s.id, e)}>✕</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      {fullScan && (
+        <ScanDetailModal
+          scan={{
+            ...fullScan,
+            findings: fullScan.cbom?.risk_assessment?.findings || [],
+            remediation: fullScan.remediation?.actions || [],
+          }}
+          onClose={() => setFullScan(null)}
+        />
+      )}
+    </div>
+  );
+}
+
+// ── CBOM Page ─────────────────────────────────────────────────────────────────
+function CBOMPage() {
+  const [cboms, setCboms] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [selected, setSelected] = useState(null);
+
+  useEffect(() => {
+    fetch(`${API}/cbom/`)
+      .then(r => r.json())
+      .then(d => { setCboms(d); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, []);
+
+  async function loadCBOM(scanId) {
+    const r = await fetch(`${API}/cbom/${scanId}`);
+    const d = await r.json();
+    setSelected({ scanId, cbom: d });
+  }
+
+  if (loading) return <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 80 }}><div className="spinner" style={{ width: 40, height: 40 }} /></div>;
+
+  return (
+    <div>
+      <div style={{ display: 'grid', gridTemplateColumns: selected ? '1fr 1.5fr' : '1fr', gap: 20 }}>
+        <div className="panel">
+          <div className="panel-title">📦 CBOM Registry</div>
+          {cboms.length === 0 ? (
+            <div style={{ color: '#6b9ab8', fontSize: 13 }}>No CBOMs generated yet.</div>
+          ) : cboms.map(c => (
+            <div key={c.scan_id}
+              style={{
+                padding: '12px', borderRadius: 8, cursor: 'pointer', marginBottom: 8,
+                background: selected?.scanId === c.scan_id ? 'rgba(0,212,255,0.08)' : 'var(--bg3)',
+                border: `1px solid ${selected?.scanId === c.scan_id ? 'var(--accent)' : 'var(--border)'}`,
+              }}
+              onClick={() => loadCBOM(c.scan_id)}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ color: '#00d4ff', fontSize: 13, fontWeight: 700 }}>{c.target}</span>
+                <span className={`badge ${statusBadgeClass(c.quantum_status)}`} style={{ fontSize: 10 }}>
+                  {statusLabel(c.quantum_status)}
+                </span>
+              </div>
+              <div style={{ fontSize: 10, color: '#6b9ab8', marginTop: 4 }}>
+                Scan #{c.scan_id} • {c.scanned_at ? new Date(c.scanned_at).toLocaleDateString() : '—'}
+              </div>
+              <div style={{ fontSize: 9, color: '#4a7fa8', marginTop: 2 }}>{c.serial_number}</div>
+            </div>
+          ))}
+        </div>
+
+        {selected && (
+          <div className="panel">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <div className="panel-title">📄 CBOM — Scan #{selected.scanId}</div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <a href={`${API}/cbom/${selected.scanId}/export`} download>
+                  <button className="btn btn-ghost" style={{ padding: '6px 14px', fontSize: 11 }}>
+                    ↓ Export
+                  </button>
+                </a>
+                <button className="btn btn-ghost" style={{ padding: '6px 8px' }} onClick={() => setSelected(null)}>✕</button>
+              </div>
+            </div>
+            <div className="json-viewer">{JSON.stringify(selected.cbom, null, 2)}</div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── About / Standards Page ────────────────────────────────────────────────────
+function AboutPage() {
+  const algorithms = [
+    { name: 'ML-KEM (Kyber)', standard: 'NIST FIPS 203', type: 'Key Encapsulation', status: 'Standardized', safe: true },
+    { name: 'ML-DSA (Dilithium)', standard: 'NIST FIPS 204', type: 'Digital Signature', status: 'Standardized', safe: true },
+    { name: 'SLH-DSA (SPHINCS+)', standard: 'NIST FIPS 205', type: 'Digital Signature', status: 'Standardized', safe: true },
+    { name: 'Falcon', standard: 'Draft FIPS 206', type: 'Digital Signature', status: 'Draft', safe: true },
+    { name: 'ECDHE', standard: 'RFC 8446', type: 'Key Exchange', status: 'Deprecated (PQC era)', safe: false },
+    { name: 'RSA-2048+', standard: 'PKCS#1', type: 'Encryption/Sig', status: 'Deprecated (PQC era)', safe: false },
+    { name: 'ECDSA (P-256)', standard: 'FIPS 186-4', type: 'Digital Signature', status: 'Deprecated (PQC era)', safe: false },
+  ];
+
+  return (
+    <div>
+      <div className="panel" style={{ marginBottom: 20 }}>
+        <div className="panel-title">⚛ NIST PQC Standards Reference</div>
+        <div style={{ fontSize: 12, color: '#6b9ab8', marginBottom: 16 }}>
+          NIST finalized the first three Post-Quantum Cryptography standards in August 2024 (FIPS 203, 204, 205).
+          These are immune to attacks from both classical and quantum computers.
+        </div>
+        <table className="results-table">
+          <thead>
+            <tr>
+              <th>Algorithm</th>
+              <th>Standard</th>
+              <th>Type</th>
+              <th>Status</th>
+              <th>Quantum Safe</th>
+            </tr>
+          </thead>
+          <tbody>
+            {algorithms.map(a => (
+              <tr key={a.name}>
+                <td style={{ color: '#e8f4fd', fontWeight: 700 }}>{a.name}</td>
+                <td style={{ color: '#6b9ab8' }}>{a.standard}</td>
+                <td>{a.type}</td>
+                <td>{a.status}</td>
+                <td>
+                  <span className={`badge ${a.safe ? 'badge-green' : 'badge-red'}`}>
+                    {a.safe ? '✓ Safe' : '✗ Vulnerable'}
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+        <div className="panel">
+          <div className="panel-title">🏦 Banking Compliance Context</div>
+          <div style={{ fontSize: 12, color: '#a0b8cc', lineHeight: 1.8 }}>
+            <p>Financial institutions face a "harvest now, decrypt later" (HNDL) threat where adversaries
+            collect encrypted traffic today to decrypt once quantum computers are available.</p>
+            <br />
+            <p>Regulators including <strong style={{ color: '#00d4ff' }}>CISA, FFIEC, ECB</strong> are mandating
+            PQC migration roadmaps. The NIST SP 800-208 and CNSA 2.0 suite provide specific guidance.</p>
+            <br />
+            <p>This tool provides the <strong style={{ color: '#00d4ff' }}>Cryptographic Bill of Materials (CBOM)</strong> needed
+            as the starting point for any PQC migration.</p>
+          </div>
+        </div>
+
+        <div className="panel">
+          <div className="panel-title">⚠ Security Limitations</div>
+          <div style={{ fontSize: 12, color: '#a0b8cc', lineHeight: 1.8 }}>
+            <div className="finding finding-warning" style={{ marginBottom: 8 }}>
+              This tool scans the <strong>public TLS layer only</strong>. Internal cryptography is not scanned.
+            </div>
+            <div className="finding finding-warning" style={{ marginBottom: 8 }}>
+              Scan targets must be <strong>publicly reachable</strong> from the server running this tool.
+            </div>
+            <div className="finding finding-info" style={{ marginBottom: 8 }}>
+              Certificate validation may fail for self-signed or internal CA certificates.
+            </div>
+            <div className="finding finding-info">
+              No traffic is intercepted. Only the TLS handshake metadata is analyzed.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Main App ──────────────────────────────────────────────────────────────────
+// ── Main App ──────────────────────────────────────────────────────────────────
+function App() {
+  const [page, setPage] = React.useState('dashboard');
+  const [toast, setToast] = React.useState(null);
+
+  const showToast = (msg, type = 'success') => {
+    setToast({ msg, type });
+    setTimeout(() => setToast(null), 4500);
+  };
+
+  const pages = {
+    dashboard: { label: 'Dashboard', icon: '▦', title: 'Security Dashboard', sub: 'QUANTUM READINESS OVERVIEW' },
+    scan: { label: 'New Scan', icon: '⚡', title: 'TLS Scanner', sub: 'ANALYZE CRYPTOGRAPHIC POSTURE' },
+    scans: { label: 'Scan History', icon: '📋', title: 'Scan Results', sub: 'ALL SCANNED TARGETS' },
+    cbom: { label: 'CBOM Registry', icon: '📦', title: 'CBOM Registry', sub: 'CRYPTOGRAPHIC BILL OF MATERIALS' },
+    about: { label: 'PQC Standards', icon: '⚛', title: 'PQC Standards', sub: 'NIST FIPS 203/204/205 REFERENCE' },
+  };
+
+  const current = pages[page];
+
+  return (
+    <div className="shell">
+      {/* Sidebar */}
+      <nav className="sidebar">
+        <div className="logo">
+          <div className="logo-mark">QuantumShield</div>
+          <div className="logo-sub">PQC Security Scanner</div>
+        </div>
+        {Object.entries(pages).map(([key, p]) => (
+          <div key={key} className={`nav-item ${page === key ? 'active' : ''}`} onClick={() => setPage(key)}>
+            <span className="nav-icon">{p.icon}</span>
+            {p.label}
+          </div>
+        ))}
+        <div style={{ padding: '24px', borderTop: '1px solid var(--border)', marginTop: 32 }}>
+          <div style={{ fontSize: 9, color: '#4a7fa8', letterSpacing: 1 }}>NIST FIPS 203/204/205</div>
+          <div style={{ fontSize: 9, color: '#4a7fa8', marginTop: 4 }}>v1.0.0 — Hackathon Edition</div>
+        </div>
+      </nav>
+
+      {/* Main */}
+      <main className="main">
+        <div className="page-header">
+          <div>
+            <div className="page-title">{current.title}</div>
+            <div className="page-sub">{current.sub}</div>
+          </div>
+          {page !== 'scan' && (
+            <button className="btn btn-primary" onClick={() => setPage('scan')}>
+              + New Scan
+            </button>
+          )}
+        </div>
+
+        {page === 'dashboard' && <DashboardPage onNav={setPage} />}
+        {page === 'scan' && <ScannerPage />}
+        {page === 'scans' && <ScansPage />}
+        {page === 'cbom' && <CBOMPage />}
+        {page === 'about' && <AboutPage />}
+      </main>
+
+      {toast && <Toast msg={toast.msg} type={toast.type} onClose={() => setToast(null)} />}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

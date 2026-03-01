@@ -1,0 +1,145 @@
+{
+  "scan_id": 1,
+  "target": "google.com",
+  "port": 443,
+  "scanned_at": "2024-08-15T10:30:00+00:00",
+  "scan_error": null,
+
+  "tls_version": "TLSv1.3",
+  "cipher_suite": "TLS_AES_256_GCM_SHA384",
+  "key_exchange": "ECDHE",
+  "signature_alg": "ECDSA-SHA256 (prime256v1)",
+  "cert_type": "ECC",
+  "key_size": 256,
+  "cert_expiry": "2024-10-15",
+  "cert_subject": "CN=*.google.com",
+  "cert_issuer": "CN=GTS CA 1C3,O=Google Trust Services LLC",
+  "cert_valid": true,
+  "days_until_expiry": 61,
+
+  "quantum_status": "NOT_PQC_READY",
+  "risk_level": "HIGH",
+  "risk_score": 70.0,
+  "is_compliant": false,
+
+  "findings": [
+    "FAIL: Key exchange 'ECDHE' is vulnerable to Shor's algorithm on quantum computers.",
+    "FAIL: Signature algorithm 'ECDSA-SHA256 (prime256v1)' is vulnerable to Shor's algorithm.",
+    "WARNING: TLS 1.3 is current but uses classical algorithms.",
+    "PASS: Symmetric cipher provides 128-bit post-quantum security.",
+    "INFO: Certificate expires in 61 days — plan renewal."
+  ],
+  "remediation": [
+    "Replace ECDHE with ML-KEM (CRYSTALS-Kyber) — standardized in NIST FIPS 203.",
+    "Replace ECDSA certificates with ML-DSA (Dilithium — FIPS 204) or SLH-DSA (SPHINCS+).",
+    "ROADMAP: Follow NIST SP 800-208 and CISA's Post-Quantum Cryptography Initiative."
+  ],
+
+  "cbom": {
+    "bomFormat": "CycloneDX-CBOM",
+    "specVersion": "1.6",
+    "serialNumber": "urn:uuid:a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "version": 1,
+    "metadata": {
+      "timestamp": "2024-08-15T10:30:00+00:00",
+      "tool": {
+        "name": "Quantum-Ready Cybersecurity Scanner",
+        "version": "1.0.0",
+        "vendor": "QuantumShield"
+      },
+      "target": {
+        "host": "google.com",
+        "port": 443,
+        "url": "https://google.com:443"
+      }
+    },
+    "components": [
+      {
+        "bom-ref": "tls-a1b2c3d4",
+        "type": "protocol",
+        "name": "TLS",
+        "version": "TLSv1.3",
+        "quantum_safe": true,
+        "nist_status": "CURRENT",
+        "details": { "cipher_suite": "TLS_AES_256_GCM_SHA384" }
+      },
+      {
+        "bom-ref": "kex-a1b2c3d4",
+        "type": "key-exchange",
+        "name": "ECDHE",
+        "quantum_safe": false,
+        "nist_status": "DEPRECATED_PQC_ERA",
+        "nist_standard": null
+      },
+      {
+        "bom-ref": "sig-a1b2c3d4",
+        "type": "signature-algorithm",
+        "name": "ECDSA-SHA256 (prime256v1)",
+        "quantum_safe": false,
+        "nist_status": "DEPRECATED_PQC_ERA",
+        "nist_standard": null
+      },
+      {
+        "bom-ref": "cert-a1b2c3d4",
+        "type": "certificate",
+        "name": "CN=*.google.com",
+        "cert_type": "ECC",
+        "key_size": 256,
+        "expiry": "2024-10-15",
+        "issuer": "CN=GTS CA 1C3",
+        "quantum_safe": false,
+        "key_size_assessment": "ACCEPTABLE"
+      }
+    ],
+    "risk_assessment": {
+      "overall_risk": "HIGH",
+      "risk_score": 70.0,
+      "quantum_status": "NOT_PQC_READY",
+      "is_compliant": false,
+      "findings": ["..."],
+      "finding_count": 5,
+      "critical_count": 0,
+      "warning_count": 1,
+      "pass_count": 1
+    },
+    "remediation_plan": {
+      "required": true,
+      "actions": ["..."],
+      "priority": "IMMEDIATE (< 30 days)",
+      "estimated_effort": "HIGH — Full cryptographic inventory + algorithm migration required",
+      "reference_standards": [
+        "NIST FIPS 203 - ML-KEM (Kyber)",
+        "NIST FIPS 204 - ML-DSA (Dilithium)",
+        "NIST FIPS 205 - SLH-DSA (SPHINCS+)"
+      ]
+    },
+    "quantum_label": {
+      "status": "NOT_PQC_READY",
+      "badge_issued": false,
+      "label_text": "✗ Not PQC Ready — Vulnerable to Quantum Attacks",
+      "color_code": "#FF4444"
+    }
+  },
+
+  "certificate": {
+    "certificate_id": "cert-uuid-here",
+    "certificate_type": "PQC_COMPLIANCE",
+    "scan_id": 1,
+    "issued_to": "google.com",
+    "issued_at": "2024-08-15T10:30:00+00:00",
+    "expires_at": "2025-08-15T10:30:00+00:00",
+    "issuer": {
+      "name": "QuantumShield Certification Authority",
+      "version": "1.0",
+      "standards": ["NIST FIPS 203", "NIST FIPS 204", "NIST FIPS 205"]
+    },
+    "compliance": {
+      "status": "NOT_PQC_READY",
+      "risk_level": "HIGH",
+      "risk_score": 70.0,
+      "is_compliant": false,
+      "standards_met": []
+    },
+    "fingerprint": "sha256:abc123..."
+  }
+}
